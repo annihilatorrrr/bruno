@@ -8,11 +8,22 @@ const lightTheme = {
     text: {
       green: '#047857',
       danger: 'rgb(185, 28, 28)',
-      muted: '#4b5563',
+      muted: '#838383',
       purple: '#8e44ad',
+      yellow: '#d97706'
     },
     bg: {
       danger: '#dc3545'
+    }
+  },
+
+  input: {
+    bg: 'white',
+    border: '#ccc',
+    focusBorder: '#8b8b8b',
+    placeholder: {
+      color: '#a2a2a2',
+      opacity: 0.8
     }
   },
 
@@ -24,7 +35,7 @@ const lightTheme = {
     bg: '#fff',
 
     name: {
-      color: '#546de5',
+      color: '#546de5'
     }
   },
 
@@ -70,7 +81,7 @@ const lightTheme = {
     bg: '#fff',
     hoverBg: '#e9e9e9',
     shadow: 'rgb(50 50 93 / 25%) 0px 6px 12px -2px, rgb(0 0 0 / 30%) 0px 3px 7px -3px',
-    seperator: '#e7e7e7',
+    separator: '#e7e7e7',
     labelBg: '#f3f3f3'
   },
 
@@ -79,7 +90,11 @@ const lightTheme = {
       get: 'rgb(5, 150, 105)',
       post: '#8e44ad',
       put: '#ca7811',
-      delete: 'rgb(185, 28, 28)'
+      delete: 'rgb(185, 28, 28)',
+      // customize these colors if needed
+      patch: '#ca7811',
+      options: '#ca7811',
+      head: '#ca7811'
     }
   },
 
@@ -98,7 +113,8 @@ const lightTheme = {
     responseSendIcon: 'rgb(209, 213, 219)',
     responseStatus: 'rgb(117 117 117)',
     responseOk: '#047857',
-    responseError: 'rgb(185, 28, 28)'
+    responseError: 'rgb(185, 28, 28)',
+    responseOverlayBg: 'rgba(255, 255, 255, 0.6)'
   },
 
   collection: {
@@ -125,6 +141,21 @@ const lightTheme = {
 
     sidebar: {
       bg: '#eaeaea'
+    }
+  },
+
+  notifications: {
+    bg: 'white',
+    list: {
+      bg: '#eaeaea',
+      borderRight: 'transparent',
+      borderBottom: '#d3d3d3',
+      hoverBg: '#e4e4e4',
+      active: {
+        border: '#546de5',
+        bg: '#dcdcdc',
+        hoverBg: '#dcdcdc'
+      }
     }
   },
 
@@ -165,6 +196,11 @@ const lightTheme = {
       color: '#9f9f9f',
       bg: '#efefef',
       border: 'rgb(234, 234, 234)'
+    },
+    danger: {
+      color: '#fff',
+      bg: '#dc3545',
+      border: '#dc3545'
     }
   },
 
@@ -178,7 +214,7 @@ const lightTheme = {
   requestTabs: {
     color: 'rgb(52, 52, 52)',
     bg: '#f7f7f7',
-    borromBorder: '#efefef',
+    bottomBorder: '#efefef',
     icon: {
       color: '#9f9f9f',
       hoverColor: 'rgb(76 76 76)',
@@ -225,6 +261,10 @@ const lightTheme = {
 
   plainGrid: {
     hoverBg: '#f4f4f4'
+  },
+
+  scrollbar: {
+    color: 'rgb(152 151 149)'
   }
 };
 

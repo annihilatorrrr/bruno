@@ -15,14 +15,17 @@ const RequestMethod = ({ item }) => {
       'method-put': method === 'put',
       'method-delete': method === 'delete',
       'method-patch': method === 'patch',
-      'method-head': method === 'head'
+      'method-head': method === 'head',
+      'method-options': method == 'options'
     });
   };
 
   return (
     <StyledWrapper>
       <div className={getClassname(item.request.method)}>
-        <span className="uppercase">{item.request.method}</span>
+        <span className="uppercase">
+          {item.request.method.length > 5 ? item.request.method.substring(0, 3) : item.request.method}
+        </span>
       </div>
     </StyledWrapper>
   );

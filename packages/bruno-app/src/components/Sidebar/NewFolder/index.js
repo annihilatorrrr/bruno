@@ -16,23 +16,27 @@ const NewFolder = ({ collection, item, onClose }) => {
     },
     validationSchema: Yup.object({
       folderName: Yup.string()
-        .min(1, 'must be atleast 1 characters')
+        .trim()
+        .min(1, 'must be at least 1 character')
         .required('name is required')
         .test({
           name: 'folderName',
           message: 'The folder name "environments" at the root of the collection is reserved in bruno',
-          test:(value) => {
-            if(item && item.uid) {
+          test: (value) => {
+            if (item && item.uid) {
               return true;
             }
-            return value && !(value.trim().toLowerCase().includes('environments'))
+            return value && !value.trim().toLowerCase().includes('environments');
           }
         })
     }),
     onSubmit: (values) => {
       dispatch(newFolder(values.folderName, collection.uid, item ? item.uid : null))
-        .then(() => onClose())
-        .catch((err) => toast.error(err ? err.message : 'An error occured while adding the request'));
+        .then(() => {
+          toast.success('New folder created!');
+          onClose()
+        })
+        .catch((err) => toast.error(err ? err.message : 'An error occurred while adding the folder'));
     }
   });
 
@@ -46,7 +50,7 @@ const NewFolder = ({ collection, item, onClose }) => {
 
   return (
     <Modal size="sm" title="New Folder" confirmText="Create" handleConfirm={onSubmit} handleCancel={onClose}>
-      <form className="bruno-form" onSubmit={formik.handleSubmit}>
+      <form className="bruno-form" onSubmit={e => e.preventDefault()}>
         <div>
           <label htmlFor="folderName" className="block font-semibold">
             Folder Name
@@ -64,7 +68,9 @@ const NewFolder = ({ collection, item, onClose }) => {
             onChange={formik.handleChange}
             value={formik.values.folderName || ''}
           />
-          {formik.touched.folderName && formik.errors.folderName ? <div className="text-red-500">{formik.errors.folderName}</div> : null}
+          {formik.touched.folderName && formik.errors.folderName ? (
+            <div className="text-red-500">{formik.errors.folderName}</div>
+          ) : null}
         </div>
       </form>
     </Modal>

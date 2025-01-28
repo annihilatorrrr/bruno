@@ -5,39 +5,33 @@ const Yup = require('yup');
 const { isDirectory, normalizeAndResolvePath } = require('../utils/filesystem');
 const { generateUidBasedOnHash } = require('../utils/common');
 
-// uid inside collections is deprecated, but we still need to validate it
-// for backward compatibility
-const uidSchema = Yup.string()
-  .length(21, 'uid must be 21 characters in length')
-  .matches(/^[a-zA-Z0-9]*$/, 'uid must be alphanumeric');
-
+// todo: bruno.json config schema validation errors must be propagated to the UI
 const configSchema = Yup.object({
-  uid: uidSchema,
-  name: Yup.string().nullable().max(256, 'name must be 256 characters or less'),
+  name: Yup.string().max(256, 'name must be 256 characters or less').required('name is required'),
   type: Yup.string().oneOf(['collection']).required('type is required'),
   version: Yup.string().oneOf(['1']).required('type is required')
-}).noUnknown(true).strict();
+});
 
 const readConfigFile = async (pathname) => {
   try {
     const jsonData = fs.readFileSync(pathname, 'utf8');
     return JSON.parse(jsonData);
-  } catch(err) {
-    return Promise.reject(new Error("Unable to parse json in bruno.json"));
+  } catch (err) {
+    return Promise.reject(new Error('Unable to parse json in bruno.json'));
   }
-}
+};
 
 const validateSchema = async (config) => {
   try {
     await configSchema.validate(config);
-  } catch(err) {
-    return Promise.reject(new Error("bruno.json format is invalid"));
+  } catch (err) {
+    return Promise.reject(new Error('bruno.json format is invalid'));
   }
 };
 
 const getCollectionConfigFile = async (pathname) => {
   const configFilePath = path.join(pathname, 'bruno.json');
-  if (!fs.existsSync(configFilePath)){
+  if (!fs.existsSync(configFilePath)) {
     throw new Error(`The collection is not valid (bruno.json not found)`);
   }
 
@@ -45,7 +39,7 @@ const getCollectionConfigFile = async (pathname) => {
   await validateSchema(config);
 
   return config;
-}
+};
 
 const openCollectionDialog = async (win, watcher) => {
   const { filePaths } = await dialog.showOpenDialog(win, {
@@ -60,22 +54,28 @@ const openCollectionDialog = async (win, watcher) => {
       console.error(`[ERROR] Cannot open unknown folder: "${resolvedPath}"`);
     }
   }
-}
+};
 
 const openCollection = async (win, watcher, collectionPath, options = {}) => {
-  if(!watcher.hasWatcher(collectionPath)) {
+  if (!watcher.hasWatcher(collectionPath)) {
     try {
-      const {
-        name
-      } = await getCollectionConfigFile(collectionPath);
-      const uid  = generateUidBasedOnHash(collectionPath);
+      const brunoConfig = await getCollectionConfigFile(collectionPath);
+      const uid = generateUidBasedOnHash(collectionPath);
 
-      win.webContents.send('main:collection-opened', collectionPath, uid, name);
-      ipcMain.emit('main:collection-opened', win, collectionPath, uid);
-    } catch(err) {
-      if(!options.dontSendDisplayErrors) {
+      if (!brunoConfig.ignore || brunoConfig.ignore.length === 0) {
+        // 5 Feb 2024:
+        // bruno.json now supports an "ignore" field to specify which folders to ignore
+        // if the ignore field is not present, we default to ignoring node_modules and .git
+        // this is to maintain backwards compatibility with older collections
+        brunoConfig.ignore = ['node_modules', '.git'];
+      }
+
+      win.webContents.send('main:collection-opened', collectionPath, uid, brunoConfig);
+      ipcMain.emit('main:collection-opened', win, collectionPath, uid, brunoConfig);
+    } catch (err) {
+      if (!options.dontSendDisplayErrors) {
         win.webContents.send('main:display-error', {
-          error: err.message || 'An error occured while opening the local collection'
+          error: err.message || 'An error occurred while opening the local collection'
         });
       }
     }

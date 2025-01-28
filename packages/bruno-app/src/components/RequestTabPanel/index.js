@@ -13,9 +13,15 @@ import RequestNotFound from './RequestNotFound';
 import QueryUrl from 'components/RequestPane/QueryUrl';
 import NetworkError from 'components/ResponsePane/NetworkError';
 import RunnerResults from 'components/RunnerResults';
+import VariablesEditor from 'components/VariablesEditor';
+import CollectionSettings from 'components/CollectionSettings';
 import { DocExplorer } from '@usebruno/graphql-docs';
 
 import StyledWrapper from './StyledWrapper';
+import SecuritySettings from 'components/SecuritySettings';
+import FolderSettings from 'components/FolderSettings';
+import { getGlobalEnvironmentVariables, getGlobalEnvironmentVariablesMasked } from 'utils/collections/index';
+import { produce } from 'immer';
 
 const MIN_LEFT_PANE_WIDTH = 300;
 const MIN_RIGHT_PANE_WIDTH = 350;
@@ -28,12 +34,33 @@ const RequestTabPanel = () => {
   const dispatch = useDispatch();
   const tabs = useSelector((state) => state.tabs.tabs);
   const activeTabUid = useSelector((state) => state.tabs.activeTabUid);
-  const collections = useSelector((state) => state.collections.collections);
-  const screenWidth = useSelector((state) => state.app.screenWidth);
-
-  let asideWidth = useSelector((state) => state.app.leftSidebarWidth);
   const focusedTab = find(tabs, (t) => t.uid === activeTabUid);
-  const [leftPaneWidth, setLeftPaneWidth] = useState(focusedTab && focusedTab.requestPaneWidth ? focusedTab.requestPaneWidth : (screenWidth - asideWidth) / 2.2); // 2.2 so that request pane is relatively smaller
+  const { globalEnvironments, activeGlobalEnvironmentUid } = useSelector((state) => state.globalEnvironments);
+  const _collections = useSelector((state) => state.collections.collections);
+
+  // merge `globalEnvironmentVariables` into the active collection and rebuild `collections` immer proxy object
+  let collections = produce(_collections, (draft) => {
+    let collection = find(draft, (c) => c.uid === focusedTab?.collectionUid);
+
+    if (collection) {
+      // add selected global env variables to the collection object
+      const globalEnvironmentVariables = getGlobalEnvironmentVariables({
+        globalEnvironments,
+        activeGlobalEnvironmentUid
+      });
+      const globalEnvSecrets = getGlobalEnvironmentVariablesMasked({ globalEnvironments, activeGlobalEnvironmentUid });
+      collection.globalEnvironmentVariables = globalEnvironmentVariables;
+      collection.globalEnvSecrets = globalEnvSecrets;
+    }
+  });
+
+  let collection = find(collections, (c) => c.uid === focusedTab?.collectionUid);
+
+  const screenWidth = useSelector((state) => state.app.screenWidth);
+  let asideWidth = useSelector((state) => state.app.leftSidebarWidth);
+  const [leftPaneWidth, setLeftPaneWidth] = useState(
+    focusedTab && focusedTab.requestPaneWidth ? focusedTab.requestPaneWidth : (screenWidth - asideWidth) / 2.2
+  ); // 2.2 so that request pane is relatively smaller
   const [rightPaneWidth, setRightPaneWidth] = useState(screenWidth - asideWidth - leftPaneWidth - DEFAULT_PADDING);
   const [dragging, setDragging] = useState(false);
 
@@ -45,10 +72,10 @@ const RequestTabPanel = () => {
   const onSchemaLoad = (schema) => setSchema(schema);
   const toggleDocs = () => setShowGqlDocs((showGqlDocs) => !showGqlDocs);
   const handleGqlClickReference = (reference) => {
-    if(docExplorerRef.current) {
+    if (docExplorerRef.current) {
       docExplorerRef.current.showDocForReference(reference);
     }
-    if(!showGqlDocs) {
+    if (!showGqlDocs) {
       setShowGqlDocs(true);
     }
   };
@@ -66,10 +93,13 @@ const RequestTabPanel = () => {
     if (dragging) {
       e.preventDefault();
       let leftPaneXPosition = e.clientX + 2;
-      if (leftPaneXPosition < (asideWidth+ DEFAULT_PADDING + MIN_LEFT_PANE_WIDTH) || leftPaneXPosition > (screenWidth - MIN_RIGHT_PANE_WIDTH )) {
+      if (
+        leftPaneXPosition < asideWidth + DEFAULT_PADDING + MIN_LEFT_PANE_WIDTH ||
+        leftPaneXPosition > screenWidth - MIN_RIGHT_PANE_WIDTH
+      ) {
         return;
       }
-      setLeftPaneWidth(leftPaneXPosition- asideWidth);
+      setLeftPaneWidth(leftPaneXPosition - asideWidth);
       setRightPaneWidth(screenWidth - e.clientX - DEFAULT_PADDING);
     }
   };
@@ -105,17 +135,31 @@ const RequestTabPanel = () => {
   }
 
   if (!focusedTab || !focusedTab.uid || !focusedTab.collectionUid) {
-    return <div className="pb-4 px-4">An error occured!</div>;
+    return <div className="pb-4 px-4">An error occurred!</div>;
   }
 
-  let collection = find(collections, (c) => c.uid === focusedTab.collectionUid);
   if (!collection || !collection.uid) {
     return <div className="pb-4 px-4">Collection not found!</div>;
   }
 
-  const showRunner = collection.showRunner;
-  if(showRunner) {
-    return <RunnerResults collection={collection}/>;
+  if (focusedTab.type === 'collection-runner') {
+    return <RunnerResults collection={collection} />;
+  }
+
+  if (focusedTab.type === 'variables') {
+    return <VariablesEditor collection={collection} />;
+  }
+
+  if (focusedTab.type === 'collection-settings') {
+    return <CollectionSettings collection={collection} />;
+  }
+  if (focusedTab.type === 'folder-settings') {
+    const folder = findItemInCollection(collection, focusedTab.folderUid);
+    return <FolderSettings collection={collection} folder={folder} />;
+  }
+
+  if (focusedTab.type === 'security-settings') {
+    return <SecuritySettings collection={collection} />;
   }
 
   const item = findItemInCollection(collection, activeTabUid);
@@ -138,7 +182,12 @@ const RequestTabPanel = () => {
       </div>
       <section className="main flex flex-grow pb-4 relative">
         <section className="request-pane">
-          <div className="px-4" style={{ width: `${Math.max(leftPaneWidth, MIN_LEFT_PANE_WIDTH)}px`, height: `calc(100% - ${DEFAULT_PADDING}px)` }}>
+          <div
+            className="px-4 h-full"
+            style={{
+              width: `${Math.max(leftPaneWidth, MIN_LEFT_PANE_WIDTH)}px`
+            }}
+          >
             {item.type === 'graphql-request' ? (
               <GraphQLRequestPane
                 item={item}
@@ -150,7 +199,9 @@ const RequestTabPanel = () => {
               />
             ) : null}
 
-            {item.type === 'http-request' ? <HttpRequestPane item={item} collection={collection} leftPaneWidth={leftPaneWidth} /> : null}
+            {item.type === 'http-request' ? (
+              <HttpRequestPane item={item} collection={collection} leftPaneWidth={leftPaneWidth} />
+            ) : null}
           </div>
         </section>
 
@@ -165,17 +216,13 @@ const RequestTabPanel = () => {
 
       {item.type === 'graphql-request' ? (
         <div className={`graphql-docs-explorer-container ${showGqlDocs ? '' : 'hidden'}`}>
-          <DocExplorer schema={schema} ref={(r) => docExplorerRef.current = r}>
-            <button
-              className='mr-2'
-              onClick={toggleDocs}
-              aria-label="Close Documentation Explorer"
-            >
+          <DocExplorer schema={schema} ref={(r) => (docExplorerRef.current = r)}>
+            <button className="mr-2" onClick={toggleDocs} aria-label="Close Documentation Explorer">
               {'\u2715'}
             </button>
           </DocExplorer>
         </div>
-      ): null}
+      ) : null}
     </StyledWrapper>
   );
 };

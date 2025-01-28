@@ -15,13 +15,9 @@ import StyledWrapper from './StyledWrapper';
 const ResponsePane = ({ rightPaneWidth, item, collection }) => {
   const [selectedTab, setSelectedTab] = useState('response');
 
-  const {
-    requestSent,
-    responseReceived,
-    testResults
-  } = item;
+  const { requestSent, responseReceived, testResults, assertionResults, error } = item;
 
-  const headers = get(item, 'responseReceived.headers', {});
+  const headers = get(item, 'responseReceived.headers', []);
   const status = get(item, 'responseReceived.status', 0);
   const size = get(item, 'responseReceived.size', 0);
   const duration = get(item, 'responseReceived.duration', 0);
@@ -31,13 +27,19 @@ const ResponsePane = ({ rightPaneWidth, item, collection }) => {
   const getTabPanel = (tab) => {
     switch (tab) {
       case 'response': {
-        return <QueryResult
-          item={item}
-          collection={collection}
-          width={rightPaneWidth}
-          disableRunEventListener={true}
-          value={(responseReceived && responseReceived.data) ? safeStringifyJSON(responseReceived.data, true) : ''}
-        />;
+        return (
+          <QueryResult
+            item={item}
+            collection={collection}
+            width={rightPaneWidth}
+            disableRunEventListener={true}
+            data={responseReceived.data}
+            dataBuffer={responseReceived.dataBuffer}
+            headers={responseReceived.headers}
+            error={error}
+            key={item.filename}
+          />
+        );
       }
       case 'headers': {
         return <ResponseHeaders headers={headers} />;
@@ -46,7 +48,7 @@ const ResponsePane = ({ rightPaneWidth, item, collection }) => {
         return <Timeline request={requestSent} response={responseReceived} />;
       }
       case 'tests': {
-        return <TestResults results={testResults} />;
+        return <TestResults results={testResults} assertionResults={assertionResults} />;
       }
 
       default: {
@@ -69,12 +71,13 @@ const ResponsePane = ({ rightPaneWidth, item, collection }) => {
         </div>
         <div className={getTabClassname('headers')} role="tab" onClick={() => selectTab('headers')}>
           Headers
+          {headers?.length > 0 && <sup className="ml-1 font-medium">{headers.length}</sup>}
         </div>
         <div className={getTabClassname('timeline')} role="tab" onClick={() => selectTab('timeline')}>
           Timeline
         </div>
         <div className={getTabClassname('tests')} role="tab" onClick={() => selectTab('tests')}>
-          <TestResultsLabel results={testResults} />
+          <TestResultsLabel results={testResults} assertionResults={assertionResults} />
         </div>
         <div className="flex flex-grow justify-end items-center">
           <StatusCode status={status} />

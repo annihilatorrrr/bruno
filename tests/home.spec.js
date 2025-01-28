@@ -1,11 +1,11 @@
 const { test, expect } = require('@playwright/test');
 const { HomePage } = require('../tests/pages/home.page');
-import * as faker from './utils/data-faker';
+const { faker } = require('./utils/data-faker');
 
 test.describe('bruno e2e test', () => {
   let homePage;
 
-  test.beforeEach(async ({ page }) => {  
+  test.beforeEach(async ({ page }) => {
     homePage = new HomePage(page);
 
     await homePage.open();
@@ -45,5 +45,4 @@ test.describe('bruno e2e test', () => {
     await homePage.updateUser();
     await expect(homePage.statusRequestSuccess).toBeVisible();
   });
-
 });

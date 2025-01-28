@@ -6,7 +6,7 @@ import { useTheme } from 'providers/Theme';
 
 /**
  * Assertion operators
- * 
+ *
  * eq          : equal to
  * neq         : not equal to
  * gt          : greater than
@@ -24,6 +24,7 @@ import { useTheme } from 'providers/Theme';
  * endsWith    : ends with
  * between     : between
  * isEmpty     : is empty
+ * isNotEmpty  : is not empty
  * isNull      : is null
  * isUndefined : is undefined
  * isDefined   : is defined
@@ -33,9 +34,10 @@ import { useTheme } from 'providers/Theme';
  * isNumber    : is number
  * isString    : is string
  * isBoolean   : is boolean
+ * isArray     : is array
  */
 const parseAssertionOperator = (str = '') => {
-  if(!str || typeof str !== 'string' || !str.length) {
+  if (!str || typeof str !== 'string' || !str.length) {
     return {
       operator: 'eq',
       value: str
@@ -43,27 +45,62 @@ const parseAssertionOperator = (str = '') => {
   }
 
   const operators = [
-    'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'notIn',
-    'contains', 'notContains', 'length', 'matches', 'notMatches',
-    'startsWith', 'endsWith', 'between', 'isEmpty', 'isNull', 'isUndefined',
-    'isDefined', 'isTruthy', 'isFalsy', 'isJson', 'isNumber', 'isString', 'isBoolean'
+    'eq',
+    'neq',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'in',
+    'notIn',
+    'contains',
+    'notContains',
+    'length',
+    'matches',
+    'notMatches',
+    'startsWith',
+    'endsWith',
+    'between',
+    'isEmpty',
+    'isNotEmpty',
+    'isNull',
+    'isUndefined',
+    'isDefined',
+    'isTruthy',
+    'isFalsy',
+    'isJson',
+    'isNumber',
+    'isString',
+    'isBoolean',
+    'isArray'
   ];
 
   const unaryOperators = [
-    'isEmpty', 'isNull', 'isUndefined', 'isDefined', 'isTruthy', 'isFalsy', 'isJson', 'isNumber', 'isString', 'isBoolean'
+    'isEmpty',
+    'isNotEmpty',
+    'isNull',
+    'isUndefined',
+    'isDefined',
+    'isTruthy',
+    'isFalsy',
+    'isJson',
+    'isNumber',
+    'isString',
+    'isBoolean',
+    'isArray'
   ];
 
-  const [operator, ...rest] = str.trim().split(' ');
+  const [operator, ...rest] = str.split(' ');
   const value = rest.join(' ');
 
-  if(unaryOperators.includes(operator)) {
+  if (unaryOperators.includes(operator)) {
     return {
       operator,
       value: ''
     };
   }
 
-  if(operators.includes(operator)) {
+  if (operators.includes(operator)) {
     return {
       operator,
       value
@@ -78,45 +115,53 @@ const parseAssertionOperator = (str = '') => {
 
 const isUnaryOperator = (operator) => {
   const unaryOperators = [
-    'isEmpty', 'isNull', 'isUndefined', 'isDefined', 'isTruthy', 'isFalsy', 'isJson', 'isNumber', 'isString', 'isBoolean'
+    'isEmpty',
+    'isNotEmpty',
+    'isNull',
+    'isUndefined',
+    'isDefined',
+    'isTruthy',
+    'isFalsy',
+    'isJson',
+    'isNumber',
+    'isString',
+    'isBoolean',
+    'isArray'
   ];
 
   return unaryOperators.includes(operator);
 };
 
 const AssertionRow = ({
-  item, collection, assertion, handleAssertionChange, handleRemoveAssertion,
-  onSave, handleRun
+  item,
+  collection,
+  assertion,
+  handleAssertionChange,
+  handleRemoveAssertion,
+  onSave,
+  handleRun
 }) => {
   const { storedTheme } = useTheme();
 
-  const {
-    operator,
-    value
-  } = parseAssertionOperator(assertion.value);
+  const { operator, value } = parseAssertionOperator(assertion.value);
 
   return (
-    <tr key={assertion.uid}>
-      <td>
-        <input
-          type="text"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck="false"
-          value={assertion.name}
-          className="mousetrap"
-          onChange={(e) => handleAssertionChange(e, assertion, 'name')}
-        />
-      </td>
+    <>
+
       <td>
         <AssertionOperator
           operator={operator}
-          onChange={(op) => handleAssertionChange({
-            target: {
-              value: `${op} ${value}`
-            }
-          }, assertion, 'value')}
+          onChange={(op) =>
+            handleAssertionChange(
+              {
+                target: {
+                  value: isUnaryOperator(op) ? op : `${op} ${value}`
+                }
+              },
+              assertion,
+              'value'
+            )
+          }
         />
       </td>
       <td>
@@ -126,20 +171,24 @@ const AssertionRow = ({
             theme={storedTheme}
             readOnly={true}
             onSave={onSave}
-            onChange={(newValue) => handleAssertionChange({
-              target: {
-                value: newValue
+            onChange={(newValue) => {
+              handleAssertionChange(
+                {
+                  target: {
+                    value: `${operator} ${newValue}`
+                  }
+                },
+                assertion,
+                'value'
+              )
               }
-            }, assertion, 'value')}
+            }
             onRun={handleRun}
             collection={collection}
+            item={item}
           />
         ) : (
-          <input
-            type="text"
-            className='cursor-default'
-            disabled
-          />
+          <input type="text" className="cursor-default" disabled />
         )}
       </td>
       <td>
@@ -147,15 +196,16 @@ const AssertionRow = ({
           <input
             type="checkbox"
             checked={assertion.enabled}
+            tabIndex="-1"
             className="mr-3 mousetrap"
             onChange={(e) => handleAssertionChange(e, assertion, 'enabled')}
           />
-          <button onClick={() => handleRemoveAssertion(assertion)}>
+          <button tabIndex="-1" onClick={() => handleRemoveAssertion(assertion)}>
             <IconTrash strokeWidth={1.5} size={20} />
           </button>
         </div>
       </td>
-    </tr>
+    </>
   );
 };
 

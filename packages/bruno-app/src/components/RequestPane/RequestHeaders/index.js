@@ -4,10 +4,15 @@ import cloneDeep from 'lodash/cloneDeep';
 import { IconTrash } from '@tabler/icons';
 import { useDispatch } from 'react-redux';
 import { useTheme } from 'providers/Theme';
-import { addRequestHeader, updateRequestHeader, deleteRequestHeader } from 'providers/ReduxStore/slices/collections';
+import { addRequestHeader, updateRequestHeader, deleteRequestHeader, moveRequestHeader } from 'providers/ReduxStore/slices/collections';
 import { sendRequest, saveRequest } from 'providers/ReduxStore/slices/collections/actions';
 import SingleLineEditor from 'components/SingleLineEditor';
 import StyledWrapper from './StyledWrapper';
+import { headers as StandardHTTPHeaders } from 'know-your-http-well';
+import { MimeTypes } from 'utils/codemirror/autocompleteConstants';
+import Table from 'components/Table/index';
+import ReorderTable from 'components/ReorderTable/index';
+const headerAutoCompleteList = StandardHTTPHeaders.map((e) => e.header);
 
 const RequestHeaders = ({ item, collection }) => {
   const dispatch = useDispatch();
@@ -60,31 +65,49 @@ const RequestHeaders = ({ item, collection }) => {
     );
   };
 
+    const handleHeaderDrag = ({ updateReorderedItem }) => {
+      dispatch(
+        moveRequestHeader({
+          collectionUid: collection.uid,
+          itemUid: item.uid,
+          updateReorderedItem
+        })
+      );
+    };
+
   return (
     <StyledWrapper className="w-full">
-      <table>
-        <thead>
-          <tr>
-            <td>Name</td>
-            <td>Value</td>
-            <td></td>
-          </tr>
-        </thead>
-        <tbody>
-          {headers && headers.length
-            ? headers.map((header, index) => {
+      <Table
+        headers={[
+          { name: 'Key', accessor: 'key', width: '34%' },
+          { name: 'Value', accessor: 'value', width: '46%' },
+          { name: '', accessor: '', width: '20%' }
+        ]}
+      >
+        <ReorderTable updateReorderedItem={handleHeaderDrag}>
+        {headers && headers.length
+            ? headers.map((header) => {
                 return (
-                  <tr key={header.uid}>
-                    <td>
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        autoCorrect="off"
-                        autoCapitalize="off"
-                        spellCheck="false"
+                  <tr key={header.uid} data-uid={header.uid}>
+                    <td className='flex relative'>
+                      <SingleLineEditor
                         value={header.name}
-                        className="mousetrap"
-                        onChange={(e) => handleHeaderValueChange(e, header, 'name')}
+                        theme={storedTheme}
+                        onSave={onSave}
+                        onChange={(newValue) =>
+                          handleHeaderValueChange(
+                            {
+                              target: {
+                                value: newValue
+                              }
+                            },
+                            header,
+                            'name'
+                          )
+                        }
+                        autocomplete={headerAutoCompleteList}
+                        onRun={handleRun}
+                        collection={collection}
                       />
                     </td>
                     <td>
@@ -92,19 +115,34 @@ const RequestHeaders = ({ item, collection }) => {
                         value={header.value}
                         theme={storedTheme}
                         onSave={onSave}
-                        onChange={(newValue) => handleHeaderValueChange({
-                          target: {
-                            value: newValue
-                          }
-                        }, header, 'value')}
+                        onChange={(newValue) =>
+                          handleHeaderValueChange(
+                            {
+                              target: {
+                                value: newValue
+                              }
+                            },
+                            header,
+                            'value'
+                          )
+                        }
                         onRun={handleRun}
+                        autocomplete={MimeTypes}
+                        allowNewlines={true}
                         collection={collection}
+                        item={item}
                       />
                     </td>
                     <td>
                       <div className="flex items-center">
-                        <input type="checkbox" checked={header.enabled} className="mr-3 mousetrap" onChange={(e) => handleHeaderValueChange(e, header, 'enabled')} />
-                        <button onClick={() => handleRemoveHeader(header)}>
+                        <input
+                          type="checkbox"
+                          checked={header.enabled}
+                          tabIndex="-1"
+                          className="mr-3 mousetrap"
+                          onChange={(e) => handleHeaderValueChange(e, header, 'enabled')}
+                        />
+                        <button tabIndex="-1" onClick={() => handleRemoveHeader(header)}>
                           <IconTrash strokeWidth={1.5} size={20} />
                         </button>
                       </div>
@@ -113,8 +151,8 @@ const RequestHeaders = ({ item, collection }) => {
                 );
               })
             : null}
-        </tbody>
-      </table>
+        </ReorderTable>
+      </Table>
       <button className="btn-add-header text-link pr-2 py-3 mt-2 select-none" onClick={addHeader}>
         + Add Header
       </button>

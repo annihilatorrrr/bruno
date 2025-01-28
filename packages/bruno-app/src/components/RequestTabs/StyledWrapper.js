@@ -1,18 +1,19 @@
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
-  border-bottom: 1px solid ${(props) => props.theme.requestTabs.borromBorder};
+  border-bottom: 1px solid ${(props) => props.theme.requestTabs.bottomBorder};
 
   ul {
     padding: 0;
     margin: 0;
     display: flex;
-    position: relative;
     overflow: scroll;
 
     &::-webkit-scrollbar {
       display: none;
     }
+
+    scrollbar-width: none;
 
     li {
       display: inline-flex;

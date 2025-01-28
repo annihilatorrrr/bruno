@@ -1,26 +1,49 @@
+const { get } = require('@usebruno/query');
+
 class BrunoResponse {
   constructor(res) {
     this.res = res;
-    this.status = res.status;
-    this.statusText = res.statusText;
-    this.headers = res.headers;
-    this.body = res.data;
+    this.status = res ? res.status : null;
+    this.statusText = res ? res.statusText : null;
+    this.headers = res ? res.headers : null;
+    this.body = res ? res.data : null;
+    this.responseTime = res ? res.responseTime : null;
+
+    // Make the instance callable
+    const callable = (...args) => get(this.body, ...args);
+    Object.setPrototypeOf(callable, this.constructor.prototype);
+    Object.assign(callable, this);
+
+    return callable;
   }
 
   getStatus() {
-    return this.res.status;
+    return this.res ? this.res.status : null;
   }
 
   getHeader(name) {
-    return this.res.header[name];
+    return this.res && this.res.headers ? this.res.headers[name] : null;
   }
 
   getHeaders() {
-    return this.res.headers;
+    return this.res ? this.res.headers : null;
   }
 
   getBody() {
-    return this.res.data;
+    return this.res ? this.res.data : null;
+  }
+
+  getResponseTime() {
+    return this.res ? this.res.responseTime : null;
+  }
+
+  setBody(data) {
+    if (!this.res) {
+      return;
+    }
+
+    this.body = data;
+    this.res.data = data;
   }
 }
 

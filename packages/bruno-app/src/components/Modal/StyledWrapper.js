@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
+  color: ${(props) => props.theme.text};
+
   &.modal--animate-out {
     animation: fade-out 0.5s forwards cubic-bezier(0.19, 1, 0.22, 1);
 
@@ -19,7 +21,8 @@ const Wrapper = styled.div`
     align-items: flex-start;
     justify-content: center;
     overflow-y: auto;
-    z-index: 1003;
+    z-index: 20;
+    background-color: rgba(0, 0, 0, 0.5);
   }
 
   .bruno-modal-card {
@@ -28,7 +31,7 @@ const Wrapper = styled.div`
     background: var(--color-background-top);
     border-radius: var(--border-radius);
     position: relative;
-    z-index: 1003;
+    z-index: 11;
     max-width: calc(100% - var(--spacing-base-unit));
     box-shadow: var(--box-shadow-base);
     display: flex;
@@ -100,7 +103,7 @@ const Wrapper = styled.div`
       border-radius: 0px;
       outline: none;
       box-shadow: none;
-      transition: border-color ease-in-out .1s;
+      transition: border-color ease-in-out 0.1s;
       border-radius: 3px;
       background-color: ${(props) => props.theme.modal.input.bg};
       border: 1px solid ${(props) => props.theme.modal.input.border};

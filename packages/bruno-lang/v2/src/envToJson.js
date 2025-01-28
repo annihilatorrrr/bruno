@@ -1,8 +1,8 @@
-const ohm = require("ohm-js");
+const ohm = require('ohm-js');
 const _ = require('lodash');
 
 const grammar = ohm.grammar(`Bru {
-  BruEnvFile = (vars)*
+  BruEnvFile = (vars | secretvars)*
 
   nl = "\\r"? "\\n"
   st = " " | "\\t"
@@ -19,19 +19,26 @@ const grammar = ohm.grammar(`Bru {
   key = keychar*
   value = valuechar*
 
+  // Array Blocks
+  array = st* "[" stnl* valuelist stnl* "]"
+  valuelist = stnl* arrayvalue stnl* ("," stnl* arrayvalue)*
+  arrayvalue = arrayvaluechar*
+  arrayvaluechar = ~(nl | st | "[" | "]" | ",") any
+
+  secretvars = "vars:secret" array
   vars = "vars" dictionary
 }`);
 
 const mapPairListToKeyValPairs = (pairList = []) => {
-  if(!pairList.length) {
+  if (!pairList.length) {
     return [];
   }
 
-  return _.map(pairList[0], pair => {
+  return _.map(pairList[0], (pair) => {
     let name = _.keys(pair)[0];
     let value = pair[name];
     let enabled = true;
-    if (name && name.length && name.charAt(0) === "~") {
+    if (name && name.length && name.charAt(0) === '~') {
       name = name.slice(1);
       enabled = false;
     }
@@ -39,6 +46,29 @@ const mapPairListToKeyValPairs = (pairList = []) => {
     return {
       name,
       value,
+      enabled
+    };
+  });
+};
+
+const mapArrayListToKeyValPairs = (arrayList = []) => {
+  arrayList = arrayList.filter((v) => v && v.length);
+
+  if (!arrayList.length) {
+    return [];
+  }
+
+  return _.map(arrayList, (value) => {
+    let name = value;
+    let enabled = true;
+    if (name && name.length && name.charAt(0) === '~') {
+      name = name.slice(1);
+      enabled = false;
+    }
+
+    return {
+      name,
+      value: null,
       enabled
     };
   });
@@ -52,15 +82,28 @@ const concatArrays = (objValue, srcValue) => {
 
 const sem = grammar.createSemantics().addAttribute('ast', {
   BruEnvFile(tags) {
-    if(!tags || !tags.ast || !tags.ast.length) {
+    if (!tags || !tags.ast || !tags.ast.length) {
       return {
         variables: []
       };
     }
 
-    return _.reduce(tags.ast, (result, item) => {
-      return _.mergeWith(result, item, concatArrays);
-    }, {});
+    return _.reduce(
+      tags.ast,
+      (result, item) => {
+        return _.mergeWith(result, item, concatArrays);
+      },
+      {}
+    );
+  },
+  array(_1, _2, _3, valuelist, _4, _5) {
+    return valuelist.ast;
+  },
+  arrayvalue(chars) {
+    return chars.sourceString ? chars.sourceString.trim() : '';
+  },
+  valuelist(_1, value, _2, _3, _4, rest) {
+    return [value.ast, ...rest.ast];
   },
   dictionary(_1, _2, pairlist, _3) {
     return pairlist.ast;
@@ -85,14 +128,26 @@ const sem = grammar.createSemantics().addAttribute('ast', {
   st(_) {
     return '';
   },
-  tagend(_1 ,_2) {
+  tagend(_1, _2) {
     return '';
   },
   _iter(...elements) {
-    return elements.map(e => e.ast);
+    return elements.map((e) => e.ast);
   },
   vars(_1, dictionary) {
     const vars = mapPairListToKeyValPairs(dictionary.ast);
+    _.each(vars, (v) => {
+      v.secret = false;
+    });
+    return {
+      variables: vars
+    };
+  },
+  secretvars: (_1, array) => {
+    const vars = mapArrayListToKeyValPairs(array.ast);
+    _.each(vars, (v) => {
+      v.secret = true;
+    });
     return {
       variables: vars
     };
@@ -102,11 +157,11 @@ const sem = grammar.createSemantics().addAttribute('ast', {
 const parser = (input) => {
   const match = grammar.match(input);
 
-  if(match.succeeded()) {
+  if (match.succeeded()) {
     return sem(match).ast;
   } else {
     throw new Error(match.message);
   }
-}
+};
 
 module.exports = parser;

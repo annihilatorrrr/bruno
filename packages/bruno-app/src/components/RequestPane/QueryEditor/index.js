@@ -8,14 +8,18 @@
 import React from 'react';
 import isEqual from 'lodash/isEqual';
 import MD from 'markdown-it';
+import { format } from 'prettier/standalone';
+import prettierPluginGraphql from 'prettier/parser-graphql';
 import { getAllVariables } from 'utils/collections';
 import { defineCodeMirrorBrunoVariablesMode } from 'utils/common/codemirror';
+import toast from 'react-hot-toast';
 import StyledWrapper from './StyledWrapper';
+import { IconWand } from '@tabler/icons';
 
 import onHasCompletion from './onHasCompletion';
 
 let CodeMirror;
-const SERVER_RENDERED = typeof navigator === 'undefined' || global['PREVENT_CODEMIRROR_RENDER'] === true;
+const SERVER_RENDERED = typeof window === 'undefined' || global['PREVENT_CODEMIRROR_RENDER'] === true;
 
 if (!SERVER_RENDERED) {
   CodeMirror = require('codemirror');
@@ -43,7 +47,7 @@ export default class QueryEditor extends React.Component {
       mode: 'graphql',
       // mode: 'brunovariables',
       brunoVarInfo: {
-        variables: getAllVariables(this.props.collection),
+        variables: getAllVariables(this.props.collection)
       },
       theme: this.props.editorTheme || 'graphiql',
       theme: this.props.theme === 'dark' ? 'monokai' : 'default',
@@ -51,7 +55,7 @@ export default class QueryEditor extends React.Component {
       autoCloseBrackets: true,
       matchBrackets: true,
       showCursorWhenSelecting: true,
-      scrollbarStyle: "overlay",
+      scrollbarStyle: 'overlay',
       readOnly: this.props.readOnly ? 'nocursor' : false,
       foldGutter: {
         minFoldSize: 4
@@ -142,7 +146,7 @@ export default class QueryEditor extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    // Ensure the changes caused by this update are not interpretted as
+    // Ensure the changes caused by this update are not interpreted as
     // user-input changes which could otherwise result in an infinite
     // event loop.
     this.ignoreChangeEvent = true;
@@ -178,25 +182,50 @@ export default class QueryEditor extends React.Component {
     }
   }
 
+  beautifyRequestBody = () => {
+    try {
+      const prettyQuery = format(this.props.value, {
+        parser: 'graphql',
+        plugins: [prettierPluginGraphql]
+      });
+
+      this.editor.setValue(prettyQuery);
+      toast.success('Query prettified');
+    } catch (e) {
+      toast.error('Error occurred while prettifying GraphQL query');
+    }
+  };
+
   // Todo: Overlay is messing up with schema hint
-  // Fix this  
+  // Fix this
   addOverlay = () => {
     // let variables = getAllVariables(this.props.collection);
     // this.variables = variables;
-
     // defineCodeMirrorBrunoVariablesMode(variables, 'graphql');
     // this.editor.setOption('mode', 'brunovariables');
-  }
+  };
 
   render() {
     return (
-      <StyledWrapper
-        className="h-full w-full"
-        aria-label="Query Editor"
-        ref={(node) => {
-          this._node = node;
-        }}
-      />
+      <>
+        <StyledWrapper
+          className="h-full w-full  flex flex-col relative graphiql-container"
+          aria-label="Query Editor"
+          font={this.props.font}
+          fontSize={this.props.fontSize}
+          ref={(node) => {
+            this._node = node;
+          }}
+        >
+          <button
+            className="btn-add-param text-link px-4 py-4 select-none absolute top-0 right-0 z-10"
+            onClick={this.beautifyRequestBody}
+            title="prettify"
+          >
+            <IconWand size={20} strokeWidth={1.5} />
+          </button>
+        </StyledWrapper>
+      </>
     );
   }
 

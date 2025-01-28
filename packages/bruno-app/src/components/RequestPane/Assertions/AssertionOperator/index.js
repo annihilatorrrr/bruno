@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * Assertion operators
- * 
+ *
  * eq          : equal to
  * neq         : not equal to
  * gt          : greater than
@@ -20,6 +20,7 @@ import React from 'react';
  * endsWith    : ends with
  * between     : between
  * isEmpty     : is empty
+ * isNotEmpty  : is not empty
  * isNull      : is null
  * isUndefined : is undefined
  * isDefined   : is defined
@@ -29,14 +30,39 @@ import React from 'react';
  * isNumber    : is number
  * isString    : is string
  * isBoolean   : is boolean
+ * isArray     : is array
  */
 
 const AssertionOperator = ({ operator, onChange }) => {
   const operators = [
-    'eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'in', 'notIn',
-    'contains', 'notContains', 'length', 'matches', 'notMatches',
-    'startsWith', 'endsWith', 'between', 'isEmpty', 'isNull', 'isUndefined',
-    'isDefined', 'isTruthy', 'isFalsy', 'isJson', 'isNumber', 'isString', 'isBoolean'
+    'eq',
+    'neq',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'in',
+    'notIn',
+    'contains',
+    'notContains',
+    'length',
+    'matches',
+    'notMatches',
+    'startsWith',
+    'endsWith',
+    'between',
+    'isEmpty',
+    'isNotEmpty',
+    'isNull',
+    'isUndefined',
+    'isDefined',
+    'isTruthy',
+    'isFalsy',
+    'isJson',
+    'isNumber',
+    'isString',
+    'isBoolean',
+    'isArray'
   ];
 
   const handleChange = (e) => {
@@ -44,7 +70,7 @@ const AssertionOperator = ({ operator, onChange }) => {
   };
 
   const getLabel = (operator) => {
-    switch(operator) {
+    switch (operator) {
       case 'eq':
         return 'equals';
       case 'neq':

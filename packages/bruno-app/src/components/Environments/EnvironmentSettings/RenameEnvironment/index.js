@@ -16,15 +16,21 @@ const RenameEnvironment = ({ onClose, environment, collection }) => {
       name: environment.name
     },
     validationSchema: Yup.object({
-      name: Yup.string().min(1, 'must be atleast 1 characters').max(50, 'must be 50 characters or less').required('name is required')
+      name: Yup.string()
+        .min(1, 'must be at least 1 character')
+        .max(50, 'must be 50 characters or less')
+        .required('name is required')
     }),
     onSubmit: (values) => {
+      if (values.name === environment.name) {
+        return;
+      }
       dispatch(renameEnvironment(values.name, environment.uid, collection.uid))
         .then(() => {
           toast.success('Environment renamed successfully');
           onClose();
         })
-        .catch(() => toast.error('An error occured while renaming the environment'));
+        .catch(() => toast.error('An error occurred while renaming the environment'));
     }
   });
 
@@ -40,8 +46,14 @@ const RenameEnvironment = ({ onClose, environment, collection }) => {
 
   return (
     <Portal>
-      <Modal size="sm" title={'Rename Environment'} confirmText="Rename" handleConfirm={onSubmit} handleCancel={onClose}>
-        <form className="bruno-form" onSubmit={formik.handleSubmit}>
+      <Modal
+        size="sm"
+        title={'Rename Environment'}
+        confirmText="Rename"
+        handleConfirm={onSubmit}
+        handleCancel={onClose}
+      >
+        <form className="bruno-form" onSubmit={e => e.preventDefault()}>
           <div>
             <label htmlFor="name" className="block font-semibold">
               Environment Name
@@ -59,7 +71,9 @@ const RenameEnvironment = ({ onClose, environment, collection }) => {
               onChange={formik.handleChange}
               value={formik.values.name || ''}
             />
-            {formik.touched.name && formik.errors.name ? <div className="text-red-500">{formik.errors.name}</div> : null}
+            {formik.touched.name && formik.errors.name ? (
+              <div className="text-red-500">{formik.errors.name}</div>
+            ) : null}
           </div>
         </form>
       </Modal>

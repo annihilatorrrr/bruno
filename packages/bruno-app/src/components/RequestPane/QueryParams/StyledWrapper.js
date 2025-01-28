@@ -1,6 +1,9 @@
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
+  div.title {
+    color: var(--color-tab-inactive);
+  }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -13,20 +16,18 @@ const Wrapper = styled.div`
     }
 
     thead {
-      color: ${(props) => props.theme.table.thead.color};;
+      color: ${(props) => props.theme.table.thead.color};
       font-size: 0.8125rem;
       user-select: none;
     }
     td {
       padding: 6px 10px;
+    }
+  }
 
-      &:nth-child(1) {
-        width: 30%;
-      }
-
-      &:nth-child(3) {
-        width: 70px;
-      }
+  td {
+    &:nth-child(1) {
+      padding: 0 0 0 8px;
     }
   }
 

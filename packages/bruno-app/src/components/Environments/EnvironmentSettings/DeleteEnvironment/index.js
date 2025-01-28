@@ -14,13 +14,19 @@ const DeleteEnvironment = ({ onClose, environment, collection }) => {
         toast.success('Environment deleted successfully');
         onClose();
       })
-      .catch(() => toast.error('An error occured while deleting the environment'));
+      .catch(() => toast.error('An error occurred while deleting the environment'));
   };
 
   return (
     <Portal>
       <StyledWrapper>
-        <Modal size="sm" title={'Delete Environment'} confirmText="Delete" handleConfirm={onConfirm} handleCancel={onClose}>
+        <Modal
+          size="sm"
+          title={'Delete Environment'}
+          confirmText="Delete"
+          handleConfirm={onConfirm}
+          handleCancel={onClose}
+        >
           Are you sure you want to delete <span className="font-semibold">{environment.name}</span> ?
         </Modal>
       </StyledWrapper>

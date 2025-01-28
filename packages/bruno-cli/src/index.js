@@ -5,7 +5,7 @@ const { CLI_EPILOGUE, CLI_VERSION } = require('./constants');
 
 const printBanner = () => {
   console.log(chalk.yellow(`Bru CLI ${CLI_VERSION}`));
-}
+};
 
 const run = async () => {
   const argLength = process.argv.length;
@@ -20,7 +20,7 @@ const run = async () => {
     .commandDir('commands')
     .epilogue(CLI_EPILOGUE)
     .usage('Usage: $0 <command> [options]')
-    .demandCommand(1, "Woof !! Let's play with some apis !!")
+    .demandCommand(1, "Woof!! Let's play with some APIs!!")
     .help('h')
     .alias('h', 'help');
 };

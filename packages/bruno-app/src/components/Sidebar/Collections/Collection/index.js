@@ -1,31 +1,34 @@
 import React, { useState, forwardRef, useRef, useEffect } from 'react';
 import classnames from 'classnames';
+import { uuid } from 'utils/common';
 import filter from 'lodash/filter';
-import cloneDeep from 'lodash/cloneDeep';
 import { useDrop } from 'react-dnd';
 import { IconChevronRight, IconDots } from '@tabler/icons';
 import Dropdown from 'components/Dropdown';
 import { collectionClicked } from 'providers/ReduxStore/slices/collections';
 import { moveItemToRootOfCollection } from 'providers/ReduxStore/slices/collections/actions';
 import { useDispatch } from 'react-redux';
+import { addTab } from 'providers/ReduxStore/slices/tabs';
 import NewRequest from 'components/Sidebar/NewRequest';
 import NewFolder from 'components/Sidebar/NewFolder';
 import CollectionItem from './CollectionItem';
 import RemoveCollection from './RemoveCollection';
-import RunCollectionItem from './CollectionItem/RunCollectionItem';
+import ExportCollection from './ExportCollection';
 import { doesCollectionHaveItemsMatchingSearchText } from 'utils/collections/search';
-import { isItemAFolder, isItemARequest, transformCollectionToSaveToIdb } from 'utils/collections';
+import { isItemAFolder, isItemARequest, transformCollectionToSaveToExportAsFile } from 'utils/collections';
 import exportCollection from 'utils/collections/export';
 
 import RenameCollection from './RenameCollection';
 import StyledWrapper from './StyledWrapper';
+import CloneCollection from './CloneCollection/index';
 
 const Collection = ({ collection, searchText }) => {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
   const [showRenameCollectionModal, setShowRenameCollectionModal] = useState(false);
+  const [showCloneCollectionModalOpen, setShowCloneCollectionModalOpen] = useState(false);
+  const [showExportCollectionModal, setShowExportCollectionModal] = useState(false);
   const [showRemoveCollectionModal, setShowRemoveCollectionModal] = useState(false);
-  const [showRunCollectionModal, setShowRunCollectionModal] = useState(false);
   const [collectionIsCollapsed, setCollectionIsCollapsed] = useState(collection.collapsed);
   const dispatch = useDispatch();
 
@@ -38,6 +41,16 @@ const Collection = ({ collection, searchText }) => {
       </div>
     );
   });
+
+  const handleRun = () => {
+    dispatch(
+      addTab({
+        uid: uuid(),
+        collectionUid: collection.uid,
+        type: 'collection-runner'
+      })
+    );
+  };
 
   useEffect(() => {
     if (searchText && searchText.length) {
@@ -55,9 +68,36 @@ const Collection = ({ collection, searchText }) => {
     dispatch(collectionClicked(collection.uid));
   };
 
-  const handleExportClick = () => {
-    const collectionCopy = cloneDeep(collection);
-    exportCollection(transformCollectionToSaveToIdb(collectionCopy));
+  const handleCollapseCollection = () => {
+    dispatch(collectionClicked(collection.uid));
+    dispatch(
+      addTab({
+        uid: uuid(),
+        collectionUid: collection.uid,
+        type: 'collection-settings'
+      })
+    );
+  }
+
+  const handleRightClick = (event) => {
+    const _menuDropdown = menuDropdownTippyRef.current;
+    if (_menuDropdown) {
+      let menuDropdownBehavior = 'show';
+      if (_menuDropdown.state.isShown) {
+        menuDropdownBehavior = 'hide';
+      }
+      _menuDropdown[menuDropdownBehavior]();
+    }
+  };
+
+  const viewCollectionSettings = () => {
+    dispatch(
+      addTab({
+        uid: uuid(),
+        collectionUid: collection.uid,
+        type: 'collection-settings'
+      })
+    );
   };
 
   const [{ isOver }, drop] = useDrop({
@@ -97,13 +137,34 @@ const Collection = ({ collection, searchText }) => {
     <StyledWrapper className="flex flex-col">
       {showNewRequestModal && <NewRequest collection={collection} onClose={() => setShowNewRequestModal(false)} />}
       {showNewFolderModal && <NewFolder collection={collection} onClose={() => setShowNewFolderModal(false)} />}
-      {showRenameCollectionModal && <RenameCollection collection={collection} onClose={() => setShowRenameCollectionModal(false)} />}
-      {showRemoveCollectionModal && <RemoveCollection collection={collection} onClose={() => setShowRemoveCollectionModal(false)} />}
-      {showRunCollectionModal && <RunCollectionItem collection={collection} onClose={() => setShowRunCollectionModal(false)} />}
+      {showRenameCollectionModal && (
+        <RenameCollection collection={collection} onClose={() => setShowRenameCollectionModal(false)} />
+      )}
+      {showRemoveCollectionModal && (
+        <RemoveCollection collection={collection} onClose={() => setShowRemoveCollectionModal(false)} />
+      )}
+      {showExportCollectionModal && (
+        <ExportCollection collection={collection} onClose={() => setShowExportCollectionModal(false)} />
+      )}
+      {showCloneCollectionModalOpen && (
+        <CloneCollection collection={collection} onClose={() => setShowCloneCollectionModalOpen(false)} />
+      )}
       <div className="flex py-1 collection-name items-center" ref={drop}>
-        <div className="flex flex-grow items-center overflow-hidden" onClick={handleClick}>
-          <IconChevronRight size={16} strokeWidth={2} className={iconClassName} style={{ width: 16, minWidth:16, color: 'rgb(160 160 160)' }} />
-          <div className="ml-1" id="sidebar-collection-name">{collection.name}</div>
+        <div
+          className="flex flex-grow items-center overflow-hidden"
+          onClick={handleCollapseCollection}
+          onContextMenu={handleRightClick}
+        >
+          <IconChevronRight
+            size={16}
+            strokeWidth={2}
+            className={iconClassName}
+            style={{ width: 16, minWidth: 16, color: 'rgb(160 160 160)' }}
+            onClick={handleClick}
+          />
+          <div className="ml-1" id="sidebar-collection-name">
+            {collection.name}
+          </div>
         </div>
         <div className="collection-actions">
           <Dropdown onCreate={onMenuDropdownCreate} icon={<MenuIcon />} placement="bottom-start">
@@ -129,7 +190,16 @@ const Collection = ({ collection, searchText }) => {
               className="dropdown-item"
               onClick={(e) => {
                 menuDropdownTippyRef.current.hide();
-                setShowRunCollectionModal(true);
+                setShowCloneCollectionModalOpen(true);
+              }}
+            >
+              Clone
+            </div>
+            <div
+              className="dropdown-item"
+              onClick={(e) => {
+                menuDropdownTippyRef.current.hide();
+                handleRun();
               }}
             >
               Run
@@ -147,7 +217,7 @@ const Collection = ({ collection, searchText }) => {
               className="dropdown-item"
               onClick={(e) => {
                 menuDropdownTippyRef.current.hide();
-                handleExportClick(true);
+                setShowExportCollectionModal(true);
               }}
             >
               Export
@@ -159,7 +229,16 @@ const Collection = ({ collection, searchText }) => {
                 setShowRemoveCollectionModal(true);
               }}
             >
-              Remove
+              Close
+            </div>
+            <div
+              className="dropdown-item"
+              onClick={(e) => {
+                menuDropdownTippyRef.current.hide();
+                viewCollectionSettings();
+              }}
+            >
+              Settings
             </div>
           </Dropdown>
         </div>

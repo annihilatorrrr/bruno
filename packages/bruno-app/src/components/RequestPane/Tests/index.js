@@ -1,6 +1,6 @@
 import React from 'react';
 import get from 'lodash/get';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import CodeEditor from 'components/CodeEditor';
 import { updateRequestTests } from 'providers/ReduxStore/slices/collections';
 import { sendRequest, saveRequest } from 'providers/ReduxStore/slices/collections/actions';
@@ -11,9 +11,8 @@ const Tests = ({ item, collection }) => {
   const dispatch = useDispatch();
   const tests = item.draft ? get(item, 'draft.request.tests') : get(item, 'request.tests');
 
-  const {
-    storedTheme
-  } = useTheme();
+  const { displayedTheme } = useTheme();
+  const preferences = useSelector((state) => state.app.preferences);
 
   const onEdit = (value) => {
     dispatch(
@@ -31,10 +30,13 @@ const Tests = ({ item, collection }) => {
   return (
     <StyledWrapper className="w-full">
       <CodeEditor
-        collection={collection} value={tests || ''}
-        theme={storedTheme}
+        collection={collection}
+        value={tests || ''}
+        theme={displayedTheme}
+        font={get(preferences, 'font.codeFont', 'default')}
+        fontSize={get(preferences, 'font.codeFontSize')}
         onEdit={onEdit}
-        mode='javascript'
+        mode="javascript"
         onRun={onRun}
         onSave={onSave}
       />
